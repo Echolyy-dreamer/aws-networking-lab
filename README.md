@@ -11,42 +11,50 @@ Involved:
 
 ```mermaid
 flowchart LR
-    subgraph AWS_VPC["AWS VPC"]
+    subgraph AWS_VPC ["AWS VPC"]
         direction TB
-        AZA["AZA"] --- AWS_EC2_A["AWS-EC2-A"]
-        AZB["AZB"] --- AWS_EC2_B["AWS-EC2-B"]
-        RouterVPC((VPC Router))
-        AWS_EC2_A --> RouterVPC
-        AWS_EC2_B --> RouterVPC
+        subgraph AZA ["AZA"]
+            EC2A["AWS-EC2-A"]
+        end
+        subgraph AZB ["AZB"]
+            EC2B["AWS-EC2-B"]
+        end
+        VPC_Router((VPC Router))
+        EC2A --> VPC_Router
+        EC2B --> VPC_Router
     end
 
-    subgraph AWS_Global_Network["AWS Global Network"]
+    subgraph AWS_Global ["AWS Global Network"]
+        direction TB
         TGW["TGW (Transit Gateway)"]
-        Accelerated_VPN_Endpoints["Accelerated VPN Endpoints"]
-        subgraph VPN_Endpoint_1["VPN Endpoint 1"]
+        subgraph Accelerated_VPN_Endpoints ["Accelerated VPN Endpoints"]
             direction LR
-            VE1_1["Tunnel 1"]
-            VE1_2["Tunnel 2"]
+            VPN1["VPN Endpoint 1"]
+            VPN2["VPN Endpoint 2"]
         end
-        subgraph VPN_Endpoint_2["VPN Endpoint 2"]
-            direction LR
-            VE2_1["Tunnel 1"]
-            VE2_2["Tunnel 2"]
+        subgraph VPN1_Tunnels [" "]
+            T1["Tunnel 1"]
+            T2["Tunnel 2"]
+        end
+        subgraph VPN2_Tunnels [" "]
+            T3["Tunnel 1"]
+            T4["Tunnel 2"]
         end
         TGW --> Accelerated_VPN_Endpoints
-        Accelerated_VPN_Endpoints --> VPN_Endpoint_1
-        Accelerated_VPN_Endpoints --> VPN_Endpoint_2
+        Accelerated_VPN_Endpoints --> VPN1_Tunnels
+        Accelerated_VPN_Endpoints --> VPN2_Tunnels
     end
 
-    subgraph Public_Internet["Public Internet"]
+    subgraph Public_Internet ["Public Internet"]
         direction LR
-        Lock1_1[/"IPsec Tunnel"/]
-        Lock1_2[/"IPsec Tunnel"/]
-        Lock2_1[/"IPsec Tunnel"/]
-        Lock2_2[/"IPsec Tunnel"/]
+        IPSEC1[/"IPsec Tunnel"/]
+        IPSEC2[/"IPsec Tunnel"/]
+        IPSEC3[/"IPsec Tunnel"/]
+        IPSEC4[/"IPsec Tunnel"/]
     end
 
-    subgraph ONPREM["ONPREM (On-Premises)"]
+    subgraph ONPREM ["ONPREM"]
+        direction TB
         Router1["Router1"]
         Router2["Router2"]
         SERVER1["SERVER1<br/>192.168.10.0/24"]
@@ -55,28 +63,26 @@ flowchart LR
         Router2 --- SERVER2
     end
 
-    %% 核心连接关系
-    RouterVPC --> TGW
-    TGW -->|Routes Exchanged using BGP| Router1
-    TGW -->|Routes Exchanged using BGP| Router2
+    %% 核心连接（横向主链路）
+    VPC_Router --> TGW
+    TGW -.->|Routes Exchanged using BGP| Router1
+    TGW -.->|Routes Exchanged using BGP| Router2
 
     %% VPN 隧道连接
-    VE1_1 --- Lock1_1 --- Router1
-    VE1_2 --- Lock1_2 --- Router1
-    VE2_1 --- Lock2_1 --- Router2
-    VE2_2 --- Lock2_2 --- Router2
+    T1 --- IPSEC1 --- Router1
+    T2 --- IPSEC2 --- Router1
+    T3 --- IPSEC3 --- Router2
+    T4 --- IPSEC4 --- Router2
 
-    %% 样式美化
-    classDef vpcStyle fill:#cce5ff,stroke:#004085,stroke-width:2px
-    classDef globalStyle fill:#ffe8cc,stroke:#cc7722,stroke-width:2px
-    classDef internetStyle fill:#ffdddd,stroke:#b30000,stroke-width:2px
-    classDef onpremStyle fill:#ffcccc,stroke:#990000,stroke-width:2px
-    classDef tgwStyle fill:#6f42c1,color:white,stroke:#492b7c,stroke-width:2px
-    classDef endpointStyle fill:#6610f2,color:white,stroke:#3f0a96,stroke-width:2px
+    %% 样式还原
+    classDef vpc fill:#cce5ff,stroke:#004085,stroke-width:2px
+    classDef global fill:#ffe8cc,stroke:#cc7722,stroke-width:2px
+    classDef internet fill:#ffdddd,stroke:#b30000,stroke-width:2px
+    classDef onprem fill:#ffcccc,stroke:#990000,stroke-width:2px
+    classDef tgw fill:#6f42c1,color:white,stroke:#492b7c,stroke-width:2px
 
-    class AWS_VPC vpcStyle
-    class AWS_Global_Network globalStyle
-    class Public_Internet internetStyle
-    class ONPREM onpremStyle
-    class TGW tgwStyle
-    class Accelerated_VPN_Endpoints endpointStyle
+    class AWS_VPC vpc
+    class AWS_Global global
+    class Public_Internet internet
+    class ONPREM onprem
+    class TGW tgw
